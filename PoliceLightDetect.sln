@@ -1,0 +1,73 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PoliceLightDetect", "PoliceLightDetect\PoliceLightDetect.vcxproj", "{4B803BD0-2F72-4418-8971-F85F9565A2FE}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8E809E09-D93A-34A4-89DD-2A962DD66F4B} = {8E809E09-D93A-34A4-89DD-2A962DD66F4B}
+		{6D369816-6500-3B97-9A71-2F456B881693} = {6D369816-6500-3B97-9A71-2F456B881693}
+		{10B8265C-D814-3269-9AEF-6C50F1815909} = {10B8265C-D814-3269-9AEF-6C50F1815909}
+		{B326AAA3-5B95-3DDC-9303-94FDAD8439A6} = {B326AAA3-5B95-3DDC-9303-94FDAD8439A6}
+		{7E8DCDC6-DBB6-394E-B1C2-C1CBDC990655} = {7E8DCDC6-DBB6-394E-B1C2-C1CBDC990655}
+		{A8696FCD-70AA-31E3-BD18-AC85D2BED14E} = {A8696FCD-70AA-31E3-BD18-AC85D2BED14E}
+		{1618A8F9-FFD8-34BD-B1CD-1C8C4E13A9B6} = {1618A8F9-FFD8-34BD-B1CD-1C8C4E13A9B6}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opencv_core", "lib\opencv320\modules\core\opencv_core.vcxproj", "{10B8265C-D814-3269-9AEF-6C50F1815909}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opencv_flann", "lib\opencv320\modules\flann\opencv_flann.vcxproj", "{1618A8F9-FFD8-34BD-B1CD-1C8C4E13A9B6}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opencv_features2d", "lib\opencv320\modules\features2d\opencv_features2d.vcxproj", "{A8696FCD-70AA-31E3-BD18-AC85D2BED14E}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opencv_highgui", "lib\opencv320\modules\highgui\opencv_highgui.vcxproj", "{8E809E09-D93A-34A4-89DD-2A962DD66F4B}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opencv_imgcodecs", "lib\opencv320\modules\imgcodecs\opencv_imgcodecs.vcxproj", "{6D369816-6500-3B97-9A71-2F456B881693}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opencv_videoio", "lib\opencv320\modules\videoio\opencv_videoio.vcxproj", "{7E8DCDC6-DBB6-394E-B1C2-C1CBDC990655}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opencv_imgproc", "lib\opencv320\modules\imgproc\opencv_imgproc.vcxproj", "{B326AAA3-5B95-3DDC-9303-94FDAD8439A6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4B803BD0-2F72-4418-8971-F85F9565A2FE}.Debug|Win32.ActiveCfg = Debug|Win32
+		{4B803BD0-2F72-4418-8971-F85F9565A2FE}.Debug|Win32.Build.0 = Debug|Win32
+		{4B803BD0-2F72-4418-8971-F85F9565A2FE}.Release|Win32.ActiveCfg = Release|Win32
+		{4B803BD0-2F72-4418-8971-F85F9565A2FE}.Release|Win32.Build.0 = Release|Win32
+		{10B8265C-D814-3269-9AEF-6C50F1815909}.Debug|Win32.ActiveCfg = Debug|Win32
+		{10B8265C-D814-3269-9AEF-6C50F1815909}.Debug|Win32.Build.0 = Debug|Win32
+		{10B8265C-D814-3269-9AEF-6C50F1815909}.Release|Win32.ActiveCfg = Release|Win32
+		{10B8265C-D814-3269-9AEF-6C50F1815909}.Release|Win32.Build.0 = Release|Win32
+		{1618A8F9-FFD8-34BD-B1CD-1C8C4E13A9B6}.Debug|Win32.ActiveCfg = Debug|Win32
+		{1618A8F9-FFD8-34BD-B1CD-1C8C4E13A9B6}.Debug|Win32.Build.0 = Debug|Win32
+		{1618A8F9-FFD8-34BD-B1CD-1C8C4E13A9B6}.Release|Win32.ActiveCfg = Release|Win32
+		{1618A8F9-FFD8-34BD-B1CD-1C8C4E13A9B6}.Release|Win32.Build.0 = Release|Win32
+		{A8696FCD-70AA-31E3-BD18-AC85D2BED14E}.Debug|Win32.ActiveCfg = Debug|Win32
+		{A8696FCD-70AA-31E3-BD18-AC85D2BED14E}.Debug|Win32.Build.0 = Debug|Win32
+		{A8696FCD-70AA-31E3-BD18-AC85D2BED14E}.Release|Win32.ActiveCfg = Release|Win32
+		{A8696FCD-70AA-31E3-BD18-AC85D2BED14E}.Release|Win32.Build.0 = Release|Win32
+		{8E809E09-D93A-34A4-89DD-2A962DD66F4B}.Debug|Win32.ActiveCfg = Debug|Win32
+		{8E809E09-D93A-34A4-89DD-2A962DD66F4B}.Debug|Win32.Build.0 = Debug|Win32
+		{8E809E09-D93A-34A4-89DD-2A962DD66F4B}.Release|Win32.ActiveCfg = Release|Win32
+		{8E809E09-D93A-34A4-89DD-2A962DD66F4B}.Release|Win32.Build.0 = Release|Win32
+		{6D369816-6500-3B97-9A71-2F456B881693}.Debug|Win32.ActiveCfg = Debug|Win32
+		{6D369816-6500-3B97-9A71-2F456B881693}.Debug|Win32.Build.0 = Debug|Win32
+		{6D369816-6500-3B97-9A71-2F456B881693}.Release|Win32.ActiveCfg = Release|Win32
+		{6D369816-6500-3B97-9A71-2F456B881693}.Release|Win32.Build.0 = Release|Win32
+		{7E8DCDC6-DBB6-394E-B1C2-C1CBDC990655}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7E8DCDC6-DBB6-394E-B1C2-C1CBDC990655}.Debug|Win32.Build.0 = Debug|Win32
+		{7E8DCDC6-DBB6-394E-B1C2-C1CBDC990655}.Release|Win32.ActiveCfg = Release|Win32
+		{7E8DCDC6-DBB6-394E-B1C2-C1CBDC990655}.Release|Win32.Build.0 = Release|Win32
+		{B326AAA3-5B95-3DDC-9303-94FDAD8439A6}.Debug|Win32.ActiveCfg = Debug|Win32
+		{B326AAA3-5B95-3DDC-9303-94FDAD8439A6}.Debug|Win32.Build.0 = Debug|Win32
+		{B326AAA3-5B95-3DDC-9303-94FDAD8439A6}.Release|Win32.ActiveCfg = Release|Win32
+		{B326AAA3-5B95-3DDC-9303-94FDAD8439A6}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
