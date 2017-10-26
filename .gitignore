@@ -1,0 +1,9 @@
+
+*.exp
+*.lib
+*.pdb
+*.ilk
+ipch/OPENCV_CORE-760777ba/OPENCV_CORE320D-7451ff14.ipch
+.vs/PoliceLightDetect/v14/.suo
+*.exe
+*.db
