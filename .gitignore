@@ -7,3 +7,10 @@ ipch/OPENCV_CORE-760777ba/OPENCV_CORE320D-7451ff14.ipch
 .vs/PoliceLightDetect/v14/.suo
 *.exe
 *.db
+*.obj
+*.log
+*.tlog
+*.pch
+bin/PoliceLightDetect.ipdb
+bin/PoliceLightDetect.iobj
+*.ipch
