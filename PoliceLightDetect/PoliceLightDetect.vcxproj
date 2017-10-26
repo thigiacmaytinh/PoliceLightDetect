@@ -126,6 +126,29 @@
   <ItemGroup>
     <ResourceCompile Include="PoliceLightDetect.rc" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\lib\opencv320\modules\core\opencv_core.vcxproj">
+      <Project>{10b8265c-d814-3269-9aef-6c50f1815909}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\lib\opencv320\modules\features2d\opencv_features2d.vcxproj">
+      <Project>{a8696fcd-70aa-31e3-bd18-ac85d2bed14e}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\lib\opencv320\modules\flann\opencv_flann.vcxproj">
+      <Project>{1618a8f9-ffd8-34bd-b1cd-1c8c4e13a9b6}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\lib\opencv320\modules\highgui\opencv_highgui.vcxproj">
+      <Project>{8e809e09-d93a-34a4-89dd-2a962dd66f4b}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\lib\opencv320\modules\imgcodecs\opencv_imgcodecs.vcxproj">
+      <Project>{6d369816-6500-3b97-9a71-2f456b881693}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\lib\opencv320\modules\imgproc\opencv_imgproc.vcxproj">
+      <Project>{b326aaa3-5b95-3ddc-9303-94fdad8439a6}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\lib\opencv320\modules\videoio\opencv_videoio.vcxproj">
+      <Project>{7e8dcdc6-dbb6-394e-b1c2-c1cbdc990655}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

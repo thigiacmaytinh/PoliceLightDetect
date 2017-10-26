@@ -14,3 +14,6 @@ ipch/OPENCV_CORE-760777ba/OPENCV_CORE320D-7451ff14.ipch
 bin/PoliceLightDetect.ipdb
 bin/PoliceLightDetect.iobj
 *.ipch
+PoliceLightDetect/obj/Debug/vc140.idb
+PoliceLightDetect.VC.VC.opendb
+PoliceLightDetect/obj/Debug/PoliceLightDetect.res
