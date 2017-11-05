@@ -189,10 +189,10 @@ void OnVideoFrame(cv::Mat frame)
 		cv::bitwise_or(g_lastBlueMask, g_lastRedMask, maskOut);
 		std::vector<TGMTcontour::Contour> contours = TGMTcontour::FindContours(maskOut, 30, cv::Size(g_minLightSize, g_minLightSize),
 			cv::Size(g_maxLightSize, g_maxLightSize));
-
-		TGMTcontour::Contour biggestContour = TGMTcontour::GetBiggestContour(contours);
-		frame = TGMTcontour::DrawBoundingRect(frame, biggestContour, YELLOW, 2);
-
+		{
+			TGMTcontour::Contour biggestContour = TGMTcontour::GetBiggestContour(contours);
+			frame = TGMTcontour::DrawBoundingRect(frame, biggestContour, YELLOW, 2);
+		}
 	}
 	
 	cv::imshow("Ouput", frame);
