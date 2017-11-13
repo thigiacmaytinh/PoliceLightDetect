@@ -52,13 +52,16 @@ void TGMTcontour::DetectAndDrawContour(cv::Mat matInput, cv::Size minSize, cv::S
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 std::vector<TGMTcontour::Contour> TGMTcontour::FindContours(cv::Mat matInput, int padding, cv::Size minSize, cv::Size maxSize)
-{
+{	
 	std::vector<Contour> contours, result;
+	if (!matInput.data)
+		return contours;
+
 	cv::Mat mat = TGMTimage::ConvertToGray(matInput);
 	std::vector<cv::Vec4i> hierarchy;
 	cv::findContours(matInput, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
 
-	for (int i = 0; i < contours.size(); ++i)
+	for (int i = 0; i < contours.size(); i++)
 	{
 		cv::Rect r = cv::boundingRect(contours[i]);
 		if (r.width > minSize.width && r.height > minSize.height

@@ -14,6 +14,7 @@
 #include "TGMTcontour.h"
 #include "TGMTshape.h"
 #include "TGMTbrightness.h"
+#include "TGMTutil.h"
 
 int g_totalFrame;
 int g_maxLightSize;
@@ -21,9 +22,30 @@ int g_minLightSize;
 int g_lastFrameHasBlueLight;
 int g_lastFrameHasRedLight;
 int g_frameFrequency;
+int g_blurSize;
+bool g_debug;
+
+cv::Scalar lowRed1, lowRed2, highRed1, highRed2;
+cv::Scalar lowBlue1, lowBlue2, highBlue1, highBlue2;
+
 cv::Mat g_lastBlueMask, g_lastRedMask;
 
 #define INI_APP_CONFIG "Police light detect"
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool ParseColor(std::string str, cv::Scalar& low, cv::Scalar& high)
+{
+	std::vector<std::string> split = TGMTutil::SplitString(str, ',');
+	if (split.size() != 6)
+	{		
+		return false;
+	}
+
+	low = cv::Scalar(atoi(split[0].c_str()), atoi(split[2].c_str()), atoi(split[4].c_str()));
+	high = cv::Scalar(atoi(split[1].c_str()), atoi(split[3].c_str()), atoi(split[5].c_str()));
+	return true;
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -74,13 +96,8 @@ cv::Mat DetectRedLight(cv::Mat matInput)
 
 	cv::Mat maskRedLeft, maskRedRight, maskRed, matResult;
 	
-	cv::Scalar lowerRedLeft = cv::Scalar(0, 130, 171);
-	cv::Scalar higherRedLeft = cv::Scalar(14, 214, 255);
-	cv::inRange(matHsv, lowerRedLeft, higherRedLeft, maskRedLeft);
-
-	cv::Scalar lowerRedRight = cv::Scalar(158, 111, 201);
-	cv::Scalar higherRedRight = cv::Scalar(179, 163, 255);
-	cv::inRange(matHsv, lowerRedRight, higherRedRight, maskRedRight);
+	cv::inRange(matHsv, lowRed1, highRed1, maskRedLeft);
+	cv::inRange(matHsv, lowRed2, highRed2, maskRedRight);
 
 	cv::bitwise_or(maskRedLeft, maskRedRight, maskRed);
 	TGMTmorphology::Dilate(maskRed, cv::MORPH_ELLIPSE, 10);
@@ -88,7 +105,10 @@ cv::Mat DetectRedLight(cv::Mat matInput)
 
 	matInput.copyTo(matResult, maskRed);
 
-	//cv::imshow("Red", matResult);
+	if (g_debug)
+	{
+		cv::imshow("red light", matResult);
+	}
 	return maskRed;
 }
 
@@ -101,17 +121,16 @@ cv::Mat DetectBlueLight(cv::Mat matInput)
 
 	cv::Mat maskBlueOutside, maskBlueInside, matResult;
 
-	cv::Scalar lowerBlueOutside = cv::Scalar(76,0,167);
-	cv::Scalar higherBlueOutside = cv::Scalar(121,255,255);
-	cv::inRange(matHsv, lowerBlueOutside, higherBlueOutside, maskBlueOutside);
-
-	cv::Scalar lowerBlueInside = cv::Scalar(108, 85, 129);
-	cv::Scalar higherBlueInside = cv::Scalar(118, 255, 255);
-	cv::inRange(matHsv, lowerBlueInside, higherBlueInside, maskBlueInside);
+	cv::inRange(matHsv, lowBlue1, highBlue1, maskBlueOutside);
+	cv::inRange(matHsv, lowBlue2, highBlue2, maskBlueInside);
 	TGMTmorphology::Dilate(maskBlueInside, cv::MORPH_ELLIPSE, 10);
 
 	cv::bitwise_and(maskBlueOutside, maskBlueInside, maskBlueOutside);
 	matInput.copyTo(matResult, maskBlueOutside);
+	if (g_debug)
+	{
+		cv::imshow("Blue light", matResult);
+	}
 	return maskBlueOutside;
 }
 
@@ -141,8 +160,11 @@ void OnVideoFrame(cv::Mat frame)
 {
 	cv::Mat matBlur = frame.clone();
 	TGMTbrightness::EqualizeHist(matBlur);
-	int blurSize = 17;
-	cv::GaussianBlur(matBlur, matBlur, cv::Size(blurSize, blurSize), 0);
+	if (g_blurSize > 0 && g_blurSize % 2 == 1)
+	{
+		cv::GaussianBlur(matBlur, matBlur, cv::Size(g_blurSize, g_blurSize), 0);
+	}
+	
 	//cv::imshow("Input", frame);
 	//cv::imshow("blur", matBlur);
 	int frameIdx = GetTGMTvideo()->m_frameCount;
@@ -161,26 +183,26 @@ void OnVideoFrame(cv::Mat frame)
 		g_lastFrameHasBlueLight = frameIdx;
 		g_lastFrameHasRedLight = frameIdx;
 	}
-	if (isBlueLightOn)
-	{
-		g_lastBlueMask = maskBlue;
-		g_lastFrameHasBlueLight = frameIdx;
-		//TGMTdraw::PutText(frame, cv::Point(10, 90), BLUE, "BLUE");
-		if (frameIdx - g_lastFrameHasRedLight <= g_frameFrequency)
-		{
-			isPoliceCar = true;			
-		}
-	}	
-	if (isRedLightOn)
-	{
-		g_lastRedMask = maskRed;
-		g_lastFrameHasRedLight = frameIdx;
-		//TGMTdraw::PutText(frame, cv::Point(10, 30), RED, "RED");
-		if (frameIdx - g_lastFrameHasBlueLight <= g_frameFrequency)
-		{
-			isPoliceCar = true;			
-		}
-	}
+	//if (isBlueLightOn)
+	//{
+	//	g_lastBlueMask = maskBlue;
+	//	g_lastFrameHasBlueLight = frameIdx;
+	//	//TGMTdraw::PutText(frame, cv::Point(10, 90), BLUE, "BLUE");
+	//	if (frameIdx - g_lastFrameHasRedLight <= g_frameFrequency)
+	//	{
+	//		isPoliceCar = true;			
+	//	}
+	//}	
+	//if (isRedLightOn)
+	//{
+	//	g_lastRedMask = maskRed;
+	//	g_lastFrameHasRedLight = frameIdx;
+	//	//TGMTdraw::PutText(frame, cv::Point(10, 30), RED, "RED");
+	//	if (frameIdx - g_lastFrameHasBlueLight <= g_frameFrequency)
+	//	{
+	//		isPoliceCar = true;			
+	//	}
+	//}
 	
 	if (isPoliceCar)
 	{
@@ -189,6 +211,7 @@ void OnVideoFrame(cv::Mat frame)
 		cv::bitwise_or(g_lastBlueMask, g_lastRedMask, maskOut);
 		std::vector<TGMTcontour::Contour> contours = TGMTcontour::FindContours(maskOut, 30, cv::Size(g_minLightSize, g_minLightSize),
 			cv::Size(g_maxLightSize, g_maxLightSize));
+		if (contours.size() > 0)
 		{
 			TGMTcontour::Contour biggestContour = TGMTcontour::GetBiggestContour(contours);
 			frame = TGMTcontour::DrawBoundingRect(frame, biggestContour, YELLOW, 2);
@@ -220,6 +243,20 @@ int _tmain(int argc, _TCHAR* argv[])
 	g_minLightSize = GetTGMTConfig()->ReadValueInt(INI_APP_CONFIG, "min_light_size");
 
 	g_frameFrequency = GetTGMTConfig()->ReadValueInt(INI_APP_CONFIG, "frame_frequency");
+
+	g_blurSize = GetTGMTConfig()->ReadValueInt(INI_APP_CONFIG, "blur_size", 11);
+
+	g_debug = GetTGMTConfig()->ReadValueBool(INI_APP_CONFIG, "debug");
+
+	std::string redColor1 = GetTGMTConfig()->ReadValueString(INI_APP_CONFIG, "red_color1");
+	std::string redColor2 = GetTGMTConfig()->ReadValueString(INI_APP_CONFIG, "red_color2");
+	std::string blueColor1 = GetTGMTConfig()->ReadValueString(INI_APP_CONFIG, "blue_color1");
+	std::string blueColor2 = GetTGMTConfig()->ReadValueString(INI_APP_CONFIG, "blue_color2");
+
+	ParseColor(redColor1, lowRed1, highRed1);
+	ParseColor(redColor2, lowRed2, highRed2);
+	ParseColor(blueColor1, lowBlue1, highBlue1);
+	ParseColor(blueColor2, lowBlue2, highBlue2);
 
 	GetTGMTvideo()->OnNewFrame = OnVideoFrame;
 	g_totalFrame = GetTGMTvideo()->GetAmountFrame(videoFile);
