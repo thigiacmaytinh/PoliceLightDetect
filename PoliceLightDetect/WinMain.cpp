@@ -23,6 +23,7 @@ int g_lastFrameHasBlueLight;
 int g_lastFrameHasRedLight;
 int g_frameFrequency;
 int g_blurSize;
+int g_lighDistance;
 bool g_debug;
 
 cv::Scalar lowRed1, lowRed2, highRed1, highRed2;
@@ -49,42 +50,25 @@ bool ParseColor(std::string str, cv::Scalar& low, cv::Scalar& high)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void DetectWhiteLight(cv::Mat matInput)
+cv::Mat DetectWhiteLight(cv::Mat frame, cv::Mat mask)
 {
 	cv::Mat matGray;
-	cv::cvtColor(matInput, matGray, CV_BGR2GRAY);
-	
+	frame.copyTo(matGray, mask);
 
-	//cv::equalizeHist(matGray, matGray);
+	cv::cvtColor(matGray, matGray, CV_BGR2GRAY);
+
 	cv::Mat matBinary;
 	cv::threshold(matGray, matBinary, 250, 255, CV_THRESH_BINARY);
-	cv::imshow("binary", matBinary);
-	auto blobs = TGMTblob::FindBlobs(matBinary, cv::Size(40,20));
-	TGMTblob::DrawBoundingRects(matInput, blobs, cv::Point(0,0), RED, 2);
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-cv::Mat DetectBrightSpot(cv::Mat matInput)
-{
-	cv::Mat matGray = TGMTimage::ConvertToGray(matInput);
-	cv::Mat matBin;
-	cv::threshold(matGray, matBin, 240, 255, cv::THRESH_BINARY);
-
-
-	//TGMTmorphology::Erode(matBin, cv::MORPH_RECT, 2);
-	TGMTmorphology::Dilate(matBin, cv::MORPH_ELLIPSE, 18);
-
 	
+	TGMTmorphology::Erode(matBinary, cv::MORPH_RECT, 31);
+	//cv::imshow("binary", matBinary);
 
-	std::vector<TGMTcontour::Contour> contours = TGMTcontour::FindContours(matBin, true, cv::Size(g_minLightSize, g_minLightSize), 
-		cv::Size(g_maxLightSize, g_maxLightSize));
-	//std::vector<TGMTshape::Circle> circles = TGMTcontour::GetEnclosingCircle(contours);
+	cv::bitwise_and(mask, matBinary, mask);
+	
+	cv::Mat matResult;
 
-	//matInput = TGMTdraw::DrawCircles(matInput, circles, RED, 2);
-	matInput = TGMTcontour::DrawBoundingRects(matInput, contours, UNDEFINED_COLOR, 2);
-	cv::imshow("mat white", matInput);
-	return matBin;
+	frame.copyTo(matResult, mask);
+	return matResult;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -100,7 +84,7 @@ cv::Mat DetectRedLight(cv::Mat matInput)
 	cv::inRange(matHsv, lowRed2, highRed2, maskRedRight);
 
 	cv::bitwise_or(maskRedLeft, maskRedRight, maskRed);
-	TGMTmorphology::Dilate(maskRed, cv::MORPH_ELLIPSE, 10);
+	//TGMTmorphology::Dilate(maskRed, cv::MORPH_ELLIPSE, 10);
 	//cv::imshow("out Red", maskRed);
 
 	matInput.copyTo(matResult, maskRed);
@@ -114,24 +98,25 @@ cv::Mat DetectRedLight(cv::Mat matInput)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-cv::Mat DetectBlueLight(cv::Mat matInput)
+cv::Mat DetectBlueLight(cv::Mat frame)
 {
 	cv::Mat matHsv;
-	cv::cvtColor(matInput, matHsv, CV_BGR2HSV);
+	cv::cvtColor(frame, matHsv, CV_BGR2HSV);
 
-	cv::Mat maskBlueOutside, maskBlueInside, matResult;
+	cv::Mat maskBlueOutside, maskBlueInside, mask, matResult;
 
 	cv::inRange(matHsv, lowBlue1, highBlue1, maskBlueOutside);
 	cv::inRange(matHsv, lowBlue2, highBlue2, maskBlueInside);
-	TGMTmorphology::Dilate(maskBlueInside, cv::MORPH_ELLIPSE, 10);
+	mask = maskBlueInside;
+	
+	cv::bitwise_or(maskBlueOutside, maskBlueInside, mask);
 
-	cv::bitwise_and(maskBlueOutside, maskBlueInside, maskBlueOutside);
-	matInput.copyTo(matResult, maskBlueOutside);
+	frame.copyTo(matResult, mask);
 	if (g_debug)
 	{
 		cv::imshow("Blue light", matResult);
 	}
-	return maskBlueOutside;
+	return mask;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -156,56 +141,56 @@ bool IsRedLightOn(cv::Mat matMask)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+cv::Mat ExpandMask(cv::Mat mask)
+{
+	if (g_lighDistance < 1)
+		return mask;
+
+	cv::Mat element = getStructuringElement(cv::MORPH_RECT,
+		cv::Size(2 * g_lighDistance + 1, 2 * g_lighDistance + 1),
+		cv::Point(g_lighDistance, g_lighDistance));
+	/// Apply the dilation operation
+	cv::dilate(mask.clone(), mask, element);
+	return mask;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void OnVideoFrame(cv::Mat frame)
 {
 	cv::Mat matBlur = frame.clone();
 	TGMTbrightness::EqualizeHist(matBlur);
 	if (g_blurSize > 0 && g_blurSize % 2 == 1)
 	{
-		cv::GaussianBlur(matBlur, matBlur, cv::Size(g_blurSize, g_blurSize), 0);
+		cv::blur(matBlur, matBlur, cv::Size(g_blurSize, g_blurSize));
 	}
-	
-	//cv::imshow("Input", frame);
-	//cv::imshow("blur", matBlur);
+
 	int frameIdx = GetTGMTvideo()->m_frameCount;
 
-	cv::Mat maskBlue = DetectBlueLight(matBlur);
-	cv::Mat maskRed = DetectRedLight(matBlur);
-	
+	cv::Mat maskBlue = ExpandMask(DetectBlueLight(matBlur));
+	cv::Mat maskRed = ExpandMask(DetectRedLight(matBlur));
+	cv::Mat maskResult, matResult;
+	cv::bitwise_and(maskRed, maskBlue, maskResult);
+	ExpandMask(maskResult);
 
-	bool isBlueLightOn = IsBlueLightOn(maskBlue);
-	bool isRedLightOn = IsRedLightOn(maskRed);
+	cv::imshow("mask result", maskResult);
+
+
 	bool isPoliceCar = false;
 
-	if (isBlueLightOn && isRedLightOn)
+	auto blobs = TGMTblob::FindBlobs(maskResult, cv::Size(g_minLightSize, g_minLightSize), cv::Size(g_maxLightSize, g_maxLightSize));
+
+
+
+	if (blobs.size() > 0)
 	{
 		isPoliceCar = true;
 		g_lastFrameHasBlueLight = frameIdx;
 		g_lastFrameHasRedLight = frameIdx;
-	}
-	//if (isBlueLightOn)
-	//{
-	//	g_lastBlueMask = maskBlue;
-	//	g_lastFrameHasBlueLight = frameIdx;
-	//	//TGMTdraw::PutText(frame, cv::Point(10, 90), BLUE, "BLUE");
-	//	if (frameIdx - g_lastFrameHasRedLight <= g_frameFrequency)
-	//	{
-	//		isPoliceCar = true;			
-	//	}
-	//}	
-	//if (isRedLightOn)
-	//{
-	//	g_lastRedMask = maskRed;
-	//	g_lastFrameHasRedLight = frameIdx;
-	//	//TGMTdraw::PutText(frame, cv::Point(10, 30), RED, "RED");
-	//	if (frameIdx - g_lastFrameHasBlueLight <= g_frameFrequency)
-	//	{
-	//		isPoliceCar = true;			
-	//	}
-	//}
-	
-	if (isPoliceCar)
-	{
+
+		TGMTblob::DrawBoundingRects(frame, blobs, cv::Point(0,0), YELLOW, 2);
+
+
 		cv::Mat maskOut;
 		TGMTdraw::PutText(frame, cv::Point(10, 30), YELLOW, "POLICE");
 		cv::bitwise_or(g_lastBlueMask, g_lastRedMask, maskOut);
@@ -247,6 +232,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	g_blurSize = GetTGMTConfig()->ReadValueInt(INI_APP_CONFIG, "blur_size", 11);
 
 	g_debug = GetTGMTConfig()->ReadValueBool(INI_APP_CONFIG, "debug");
+	g_lighDistance = GetTGMTConfig()->ReadValueInt(INI_APP_CONFIG, "light_distance");
 
 	std::string redColor1 = GetTGMTConfig()->ReadValueString(INI_APP_CONFIG, "red_color1");
 	std::string redColor2 = GetTGMTConfig()->ReadValueString(INI_APP_CONFIG, "red_color2");
