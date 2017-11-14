@@ -192,7 +192,9 @@ void OnVideoFrame(cv::Mat frame)
 
 
 		cv::Mat maskOut;
-		TGMTdraw::PutText(frame, cv::Point(10, 30), YELLOW, "POLICE");
+
+		TGMTdraw::DrawRectangle(frame, cv::Rect(0, 0, frame.cols, frame.rows), RED, 5);
+		
 		cv::bitwise_or(g_lastBlueMask, g_lastRedMask, maskOut);
 		std::vector<TGMTcontour::Contour> contours = TGMTcontour::FindContours(maskOut, 30, cv::Size(g_minLightSize, g_minLightSize),
 			cv::Size(g_maxLightSize, g_maxLightSize));
