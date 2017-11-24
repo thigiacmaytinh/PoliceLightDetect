@@ -173,7 +173,10 @@ void OnVideoFrame(cv::Mat frame)
 	cv::bitwise_and(maskRed, maskBlue, maskResult);
 	ExpandMask(maskResult);
 
-	cv::imshow("mask result", maskResult);
+	if (g_debug)
+	{
+		cv::imshow("mask result", maskResult);
+	}	
 
 
 	bool isPoliceCar = false;
