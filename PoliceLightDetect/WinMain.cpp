@@ -79,8 +79,7 @@ cv::Mat CheckWhiteLightInside(cv::Mat frame, cv::Mat mask)
 {
 	std::vector<TGMTcontour::Contour> contours = TGMTcontour::FindContours(mask, 30, cv::Size(g_minLightSize, g_minLightSize),
 		cv::Size(g_maxLightSize, g_maxLightSize));
-	//std::vector<cv::Vec4i> hierarchy;
-	//cv::findContours(mask, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_NONE);
+
 
 	cv::Mat matResult = cv::Mat::zeros(frame.size(), CV_8UC3);
 	cv::Mat matWhiteOnly;
@@ -89,7 +88,6 @@ cv::Mat CheckWhiteLightInside(cv::Mat frame, cv::Mat mask)
 
 	for (int i = 0; i < contours.size(); i++)
 	{
-		//std::cout << hierarchy[i];
 		TGMTcontour::Contour con = contours[i];
 		cv::Rect rect = cv::boundingRect(con);
 		cv::Mat matRoi = matWhiteOnly(rect);
@@ -104,6 +102,7 @@ cv::Mat CheckWhiteLightInside(cv::Mat frame, cv::Mat mask)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+//trả về ảnh chỉ chứa đèn đỏ
 cv::Mat DetectRedLight(cv::Mat frame)
 {
 	cv::Mat matHsv;
@@ -117,7 +116,7 @@ cv::Mat DetectRedLight(cv::Mat frame)
 	cv::bitwise_or(maskRedLeft, maskRedRight, maskRed);
 
 	matResult = CheckWhiteLightInside(frame, maskRed);
-	//matInput.copyTo(matResult, maskRed);
+
 
 	if (g_debug)
 	{
@@ -128,6 +127,7 @@ cv::Mat DetectRedLight(cv::Mat frame)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+//trả về ảnh chỉ chứa đèn xanh
 cv::Mat DetectBlueLight(cv::Mat frame)
 {
 	cv::Mat matHsv;
@@ -141,7 +141,6 @@ cv::Mat DetectBlueLight(cv::Mat frame)
 	
 	cv::bitwise_or(maskBlueOutside, maskBlueInside, mask);
 	matResult = CheckWhiteLightInside(frame, mask);
-	//frame.copyTo(matResult, mask);
 	if (g_debug)
 	{
 		cv::imshow("Blue light", matResult);
@@ -179,6 +178,7 @@ cv::Mat ExpandMask(cv::Mat mask)
 	cv::Mat element = getStructuringElement(cv::MORPH_RECT,
 		cv::Size(2 * g_lighDistance + 1, 2 * g_lighDistance + 1),
 		cv::Point(g_lighDistance, g_lighDistance));
+
 	/// Apply the dilation operation
 	cv::dilate(mask.clone(), mask, element);
 	return mask;
@@ -186,6 +186,7 @@ cv::Mat ExpandMask(cv::Mat mask)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+//mỗi khi đọc 1 frame thì gọi đến hàm này
 void OnVideoFrame(cv::Mat frame)
 {
 	cv::Mat matBlur = frame.clone();
@@ -236,8 +237,8 @@ void OnVideoFrame(cv::Mat frame)
 
 		cv::Mat maskOut;
 
-		//vẽ khung hình chữ nhật màu đỏ bên ngoài video khi phát hiện xe
-		TGMTdraw::DrawRectangle(frame, cv::Rect(0, 0, frame.cols, frame.rows), RED, 5);
+		//vẽ khung hình chữ nhật bên ngoài video khi phát hiện xe
+		TGMTdraw::DrawRectangle(frame, cv::Rect(0, 0, frame.cols, frame.rows), PURPLE, 5);
 		
 		cv::bitwise_or(g_lastBlueMask, g_lastRedMask, maskOut);
 		std::vector<TGMTcontour::Contour> contours = TGMTcontour::FindContours(maskOut, 30, cv::Size(g_minLightSize, g_minLightSize),
@@ -262,7 +263,7 @@ void OnVideoFrame(cv::Mat frame)
 	}
 	
 	//vẽ thứ tự khung hình
-	TGMTdraw::PutText(frame, cv::Point(10, 30), BLUE, "%d/%d", frameIdx, g_totalFrame);
+	TGMTdraw::PutText(frame, cv::Point(10, 20), BLUE,0.6, "%d/%d", frameIdx, g_totalFrame);
 
 	cv::imshow("Ouput", frame);
 	std::cout << "\r" << "Frame: " << GetTGMTvideo()->m_frameCount + 1<< " / " << g_totalFrame;
@@ -274,6 +275,7 @@ void OnVideoFrame(cv::Mat frame)
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+	//load setting từ file config.ini
 	if (!GetTGMTConfig()->LoadSettingFromFile("PoliceLight.ini"))
 	{
 		PrintError("Can not load setting: PoliceLight.json");
@@ -300,6 +302,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	std::string blueColor1 = GetTGMTConfig()->ReadValueString(INI_APP_CONFIG, "blue_color1");
 	std::string blueColor2 = GetTGMTConfig()->ReadValueString(INI_APP_CONFIG, "blue_color2");
 
+	//parse các giá trị màu xanh & đỏ
 	bool parseResult = true;
 	parseResult &= ParseColor(redColor1, lowRed1, highRed1);
 	parseResult &= ParseColor(redColor2, lowRed2, highRed2);
@@ -308,7 +311,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	if (!parseResult)
 	{
 		PrintError("Load color value failed");
-		return;
+		return 0;
 	}
 
 
