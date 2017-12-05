@@ -79,47 +79,52 @@ cv::Mat CheckWhiteLightInside(cv::Mat frame, cv::Mat mask)
 {
 	std::vector<TGMTcontour::Contour> contours = TGMTcontour::FindContours(mask, 30, cv::Size(g_minLightSize, g_minLightSize),
 		cv::Size(g_maxLightSize, g_maxLightSize));
-
-
-	cv::Mat matResult = cv::Mat::zeros(frame.size(), CV_8UC3);
-	cv::Mat matWhiteOnly;
+		
+	
 	cv::Mat matGray = TGMTimage::ConvertToGray(frame);
-	cv::threshold(matGray, matWhiteOnly, 250, 255, CV_THRESH_BINARY);
+	cv::equalizeHist(matGray, matGray);
+	cv::Mat matWhiteOnly;
 
+	cv::threshold(matGray, matWhiteOnly, 250, 255, CV_THRESH_BINARY);
+	
+	cv::Mat maskJoin = cv::Mat::zeros(frame.size(), CV_8U);
 	for (int i = 0; i < contours.size(); i++)
 	{
 		TGMTcontour::Contour con = contours[i];
 		cv::Rect rect = cv::boundingRect(con);
 		cv::Mat matRoi = matWhiteOnly(rect);
-		if (cv::countNonZero(matRoi) > 50)
+		if (cv::countNonZero(matRoi) > 20)
 		{
-			frame(rect).copyTo(matResult(rect));
+			mask(rect).copyTo(maskJoin(rect));
+			matWhiteOnly(rect).copyTo(maskJoin(rect));
 		}
 	}
 
-	return matResult;
+	return maskJoin;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //trả về ảnh chỉ chứa đèn đỏ
-cv::Mat DetectRedLight(cv::Mat frame)
+cv::Mat DetectMaskRed(cv::Mat frame)
 {
 	cv::Mat matHsv;
 	cv::cvtColor(frame, matHsv, CV_BGR2HSV);
 
-	cv::Mat maskRedLeft, maskRedRight, maskRed, matResult;
+	cv::Mat maskRedLeft, maskRedRight, maskRed;
 	
 	cv::inRange(matHsv, lowRed1, highRed1, maskRedLeft);
 	cv::inRange(matHsv, lowRed2, highRed2, maskRedRight);
 
 	cv::bitwise_or(maskRedLeft, maskRedRight, maskRed);
 
-	matResult = CheckWhiteLightInside(frame, maskRed);
+	maskRed = CheckWhiteLightInside(frame, maskRed);
 
 
 	if (g_debug)
 	{
+		cv::Mat matResult;
+		frame.copyTo(matResult, maskRed);
 		cv::imshow("red light", matResult);
 	}
 	return maskRed;
@@ -128,21 +133,23 @@ cv::Mat DetectRedLight(cv::Mat frame)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //trả về ảnh chỉ chứa đèn xanh
-cv::Mat DetectBlueLight(cv::Mat frame)
+cv::Mat DetectMaskBlue(cv::Mat frame)
 {
 	cv::Mat matHsv;
 	cv::cvtColor(frame, matHsv, CV_BGR2HSV);
 
-	cv::Mat maskBlueOutside, maskBlueInside, mask, matResult;
+	cv::Mat maskBlueOutside, maskBlueInside, mask;
 
 	cv::inRange(matHsv, lowBlue1, highBlue1, maskBlueOutside);
 	cv::inRange(matHsv, lowBlue2, highBlue2, maskBlueInside);
 	mask = maskBlueInside;
 	
 	cv::bitwise_or(maskBlueOutside, maskBlueInside, mask);
-	matResult = CheckWhiteLightInside(frame, mask);
+	mask = CheckWhiteLightInside(frame, mask);
 	if (g_debug)
 	{
+		cv::Mat matResult;
+		frame.copyTo(matResult, mask);
 		cv::imshow("Blue light", matResult);
 	}
 	return mask;
@@ -175,7 +182,7 @@ cv::Mat ExpandMask(cv::Mat mask)
 	if (g_lighDistance < 1)
 		return mask;
 
-	cv::Mat element = getStructuringElement(cv::MORPH_RECT,
+	cv::Mat element = getStructuringElement(cv::MORPH_ELLIPSE,
 		cv::Size(2 * g_lighDistance + 1, 2 * g_lighDistance + 1),
 		cv::Point(g_lighDistance, g_lighDistance));
 
@@ -198,8 +205,8 @@ void OnVideoFrame(cv::Mat frame)
 
 	int frameIdx = GetTGMTvideo()->m_frameCount;
 
-	cv::Mat maskBlue = DetectBlueLight(matBlur);	
-	cv::Mat maskRed = DetectRedLight(matBlur);
+	cv::Mat maskBlue = DetectMaskBlue(matBlur);
+	cv::Mat maskRed = DetectMaskRed(matBlur);
 
 	cv::Mat maskRedBlue;
 	cv::bitwise_or(maskRed, maskBlue, maskRedBlue);
@@ -209,7 +216,7 @@ void OnVideoFrame(cv::Mat frame)
 
 	cv::Mat maskResult, matResult;
 	cv::bitwise_and(maskRed, maskBlue, maskResult);
-	ExpandMask(maskResult);
+	maskResult = ExpandMask(maskResult);
 
 	if (g_debug)
 	{
