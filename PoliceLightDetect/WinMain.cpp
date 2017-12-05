@@ -25,6 +25,7 @@ int g_frameFrequency;
 int g_blurSize;
 int g_lighDistance;
 bool g_debug;
+int g_lastFrameDetectd;
 
 cv::Scalar lowRed1, lowRed2, highRed1, highRed2;
 cv::Scalar lowBlue1, lowBlue2, highBlue1, highBlue2;
@@ -73,10 +74,40 @@ cv::Mat DetectWhiteLight(cv::Mat frame, cv::Mat mask)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-cv::Mat DetectRedLight(cv::Mat matInput)
+//khi tìm được đèn xanh/đỏ thì cần kiểm tra thêm 1 lần nữa xem có màu trắng ở giữa không 
+cv::Mat CheckWhiteLightInside(cv::Mat frame, cv::Mat mask)
+{
+	std::vector<TGMTcontour::Contour> contours = TGMTcontour::FindContours(mask, 30, cv::Size(g_minLightSize, g_minLightSize),
+		cv::Size(g_maxLightSize, g_maxLightSize));
+	//std::vector<cv::Vec4i> hierarchy;
+	//cv::findContours(mask, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_NONE);
+
+	cv::Mat matResult = cv::Mat::zeros(frame.size(), CV_8UC3);
+	cv::Mat matWhiteOnly;
+	cv::Mat matGray = TGMTimage::ConvertToGray(frame);
+	cv::threshold(matGray, matWhiteOnly, 250, 255, CV_THRESH_BINARY);
+
+	for (int i = 0; i < contours.size(); i++)
+	{
+		//std::cout << hierarchy[i];
+		TGMTcontour::Contour con = contours[i];
+		cv::Rect rect = cv::boundingRect(con);
+		cv::Mat matRoi = matWhiteOnly(rect);
+		if (cv::countNonZero(matRoi) > 50)
+		{
+			frame(rect).copyTo(matResult(rect));
+		}
+	}
+
+	return matResult;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+cv::Mat DetectRedLight(cv::Mat frame)
 {
 	cv::Mat matHsv;
-	cv::cvtColor(matInput, matHsv, CV_BGR2HSV);
+	cv::cvtColor(frame, matHsv, CV_BGR2HSV);
 
 	cv::Mat maskRedLeft, maskRedRight, maskRed, matResult;
 	
@@ -84,10 +115,9 @@ cv::Mat DetectRedLight(cv::Mat matInput)
 	cv::inRange(matHsv, lowRed2, highRed2, maskRedRight);
 
 	cv::bitwise_or(maskRedLeft, maskRedRight, maskRed);
-	//TGMTmorphology::Dilate(maskRed, cv::MORPH_ELLIPSE, 10);
-	//cv::imshow("out Red", maskRed);
 
-	matInput.copyTo(matResult, maskRed);
+	matResult = CheckWhiteLightInside(frame, maskRed);
+	//matInput.copyTo(matResult, maskRed);
 
 	if (g_debug)
 	{
@@ -110,8 +140,8 @@ cv::Mat DetectBlueLight(cv::Mat frame)
 	mask = maskBlueInside;
 	
 	cv::bitwise_or(maskBlueOutside, maskBlueInside, mask);
-
-	frame.copyTo(matResult, mask);
+	matResult = CheckWhiteLightInside(frame, mask);
+	//frame.copyTo(matResult, mask);
 	if (g_debug)
 	{
 		cv::imshow("Blue light", matResult);
@@ -167,8 +197,15 @@ void OnVideoFrame(cv::Mat frame)
 
 	int frameIdx = GetTGMTvideo()->m_frameCount;
 
-	cv::Mat maskBlue = ExpandMask(DetectBlueLight(matBlur));
-	cv::Mat maskRed = ExpandMask(DetectRedLight(matBlur));
+	cv::Mat maskBlue = DetectBlueLight(matBlur);	
+	cv::Mat maskRed = DetectRedLight(matBlur);
+
+	cv::Mat maskRedBlue;
+	cv::bitwise_or(maskRed, maskBlue, maskRedBlue);
+
+	maskRed = ExpandMask(maskRed);
+	maskBlue = ExpandMask(maskBlue);
+
 	cv::Mat maskResult, matResult;
 	cv::bitwise_and(maskRed, maskBlue, maskResult);
 	ExpandMask(maskResult);
@@ -176,6 +213,9 @@ void OnVideoFrame(cv::Mat frame)
 	if (g_debug)
 	{
 		cv::imshow("mask result", maskResult);
+		cv::Mat matBlueAndRed;
+		frame.copyTo(matBlueAndRed, maskRedBlue);
+		cv::imshow("matBlueAndRed", matBlueAndRed);
 	}	
 
 
@@ -196,18 +236,34 @@ void OnVideoFrame(cv::Mat frame)
 
 		cv::Mat maskOut;
 
+		//vẽ khung hình chữ nhật màu đỏ bên ngoài video khi phát hiện xe
 		TGMTdraw::DrawRectangle(frame, cv::Rect(0, 0, frame.cols, frame.rows), RED, 5);
 		
 		cv::bitwise_or(g_lastBlueMask, g_lastRedMask, maskOut);
 		std::vector<TGMTcontour::Contour> contours = TGMTcontour::FindContours(maskOut, 30, cv::Size(g_minLightSize, g_minLightSize),
 			cv::Size(g_maxLightSize, g_maxLightSize));
+
+		//chỉ vẽ contour lớn nhất
 		if (contours.size() > 0)
 		{
 			TGMTcontour::Contour biggestContour = TGMTcontour::GetBiggestContour(contours);
 			frame = TGMTcontour::DrawBoundingRect(frame, biggestContour, YELLOW, 2);
 		}
+
+		g_lastFrameDetectd = frameIdx;
+	}
+	else
+	{
+		if (g_lastFrameDetectd > frameIdx - 5)
+		{
+
+		}	
+
 	}
 	
+	//vẽ thứ tự khung hình
+	TGMTdraw::PutText(frame, cv::Point(10, 30), BLUE, "%d/%d", frameIdx, g_totalFrame);
+
 	cv::imshow("Ouput", frame);
 	std::cout << "\r" << "Frame: " << GetTGMTvideo()->m_frameCount + 1<< " / " << g_totalFrame;
 
@@ -244,10 +300,17 @@ int _tmain(int argc, _TCHAR* argv[])
 	std::string blueColor1 = GetTGMTConfig()->ReadValueString(INI_APP_CONFIG, "blue_color1");
 	std::string blueColor2 = GetTGMTConfig()->ReadValueString(INI_APP_CONFIG, "blue_color2");
 
-	ParseColor(redColor1, lowRed1, highRed1);
-	ParseColor(redColor2, lowRed2, highRed2);
-	ParseColor(blueColor1, lowBlue1, highBlue1);
-	ParseColor(blueColor2, lowBlue2, highBlue2);
+	bool parseResult = true;
+	parseResult &= ParseColor(redColor1, lowRed1, highRed1);
+	parseResult &= ParseColor(redColor2, lowRed2, highRed2);
+	parseResult &= ParseColor(blueColor1, lowBlue1, highBlue1);
+	parseResult &= ParseColor(blueColor2, lowBlue2, highBlue2);
+	if (!parseResult)
+	{
+		PrintError("Load color value failed");
+		return;
+	}
+
 
 	GetTGMTvideo()->OnNewFrame = OnVideoFrame;
 	g_totalFrame = GetTGMTvideo()->GetAmountFrame(videoFile);
