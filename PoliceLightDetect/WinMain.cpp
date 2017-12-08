@@ -15,6 +15,7 @@
 #include "TGMTshape.h"
 #include "TGMTbrightness.h"
 #include "TGMTutil.h"
+#include "TGMThistogram.h"
 
 int g_totalFrame;
 int g_maxLightSize;
@@ -90,8 +91,14 @@ cv::Mat CheckWhiteLightInside(cv::Mat frame, cv::Mat mask)
 	cv::equalizeHist(matGray, matGray);
 	cv::Mat matWhiteOnly;
 
+	//vẽ histogram 
+	if (g_debug)
+	{
+		TGMThistogram::DrawHistogram(matGray);
+	}
+
 	//phân ngưỡng để lấy vị trí đèn màu trắng (là vùng sáng nhất)
-	cv::threshold(matGray, matWhiteOnly, 250, 255, CV_THRESH_BINARY);
+	cv::threshold(matGray, matWhiteOnly, 200, 255, CV_THRESH_BINARY);
 	
 	cv::Mat maskJoin = cv::Mat::zeros(frame.size(), CV_8U);
 	for (int i = 0; i < contours.size(); i++)
@@ -106,6 +113,7 @@ cv::Mat CheckWhiteLightInside(cv::Mat frame, cv::Mat mask)
 			mask(rect).copyTo(maskJoin(rect));
 			matWhiteOnly(rect).copyTo(maskJoin(rect));
 		}
+
 	}
 
 	return maskJoin;
@@ -217,8 +225,6 @@ void OnVideoFrame(cv::Mat frame)
 {
 	cv::Mat matBlur = frame.clone();
 
-	//cân bằng sáng cho ảnh
-	TGMTbrightness::EqualizeHist(matBlur);
 
 	//nếu giá trị blur đúng (lớn hơn 0 và số lẻ) thì làm mờ ảnh
 	if (g_blurSize > 0 && g_blurSize % 2 == 1)

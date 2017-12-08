@@ -61,15 +61,15 @@ cv::Mat TGMThistogram::GetHistogram(cv::Mat matInput)
 	/// Draw for each channel
 	for (int i = 1; i < histSize; i++)
 	{
-		line(histImage, cv::Point(bin_w*(i - 1), hist_h - cvRound(b_hist.at<float>(i - 1))),
+		cv::line(histImage, cv::Point(bin_w*(i - 1), hist_h - cvRound(b_hist.at<float>(i - 1))),
 			cv::Point(bin_w*(i), hist_h - cvRound(b_hist.at<float>(i))),
-			cv::Scalar(255, 0, 0), 1, 8, 0);
+			matInput.channels() == 3 ? BLUE : WHITE, 1, 8, 0);
 		if (matInput.channels() == 3)
 		{
-			line(histImage, cv::Point(bin_w*(i - 1), hist_h - cvRound(g_hist.at<float>(i - 1))),
+			cv::line(histImage, cv::Point(bin_w*(i - 1), hist_h - cvRound(g_hist.at<float>(i - 1))),
 				cv::Point(bin_w*(i), hist_h - cvRound(g_hist.at<float>(i))),
 				cv::Scalar(0, 255, 0), 1, 8, 0);
-			line(histImage, cv::Point(bin_w*(i - 1), hist_h - cvRound(r_hist.at<float>(i - 1))),
+			cv::line(histImage, cv::Point(bin_w*(i - 1), hist_h - cvRound(r_hist.at<float>(i - 1))),
 				cv::Point(bin_w*(i), hist_h - cvRound(r_hist.at<float>(i))),
 				cv::Scalar(0, 0, 255), 1, 8, 0);
 		}

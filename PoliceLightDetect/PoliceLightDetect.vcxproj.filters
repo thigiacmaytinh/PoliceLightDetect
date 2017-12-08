@@ -57,6 +57,9 @@
     <ClCompile Include="..\lib\TGMTcpp\src\TGMTcontour.cpp">
       <Filter>TGMT</Filter>
     </ClCompile>
+    <ClCompile Include="..\lib\TGMTcpp\src\TGMThistogram.cpp">
+      <Filter>TGMT</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\lib\TGMTcpp\src\stdafx.h">
@@ -103,6 +106,9 @@
     </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\lib\TGMTcpp\src\TGMThistogram.h">
+      <Filter>TGMT</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

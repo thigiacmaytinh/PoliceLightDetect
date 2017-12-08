@@ -99,6 +99,7 @@
     <ClCompile Include="..\lib\TGMTcpp\src\TGMTdebugger.cpp" />
     <ClCompile Include="..\lib\TGMTcpp\src\TGMTdraw.cpp" />
     <ClCompile Include="..\lib\TGMTcpp\src\TGMTfile.cpp" />
+    <ClCompile Include="..\lib\TGMTcpp\src\TGMThistogram.cpp" />
     <ClCompile Include="..\lib\TGMTcpp\src\TGMTimage.cpp" />
     <ClCompile Include="..\lib\TGMTcpp\src\TGMTmorphology.cpp" />
     <ClCompile Include="..\lib\TGMTcpp\src\TGMTshape.cpp" />
@@ -116,6 +117,7 @@
     <ClInclude Include="..\lib\TGMTcpp\src\TGMTdebugger.h" />
     <ClInclude Include="..\lib\TGMTcpp\src\TGMTdraw.h" />
     <ClInclude Include="..\lib\TGMTcpp\src\TGMTfile.h" />
+    <ClInclude Include="..\lib\TGMTcpp\src\TGMThistogram.h" />
     <ClInclude Include="..\lib\TGMTcpp\src\TGMTimage.h" />
     <ClInclude Include="..\lib\TGMTcpp\src\TGMTmorphology.h" />
     <ClInclude Include="..\lib\TGMTcpp\src\TGMTshape.h" />
