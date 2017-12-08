@@ -36,6 +36,7 @@ cv::Mat g_lastBlueMask, g_lastRedMask;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+//đọc giá trị setting
 bool ParseColor(std::string str, cv::Scalar& low, cv::Scalar& high)
 {
 	std::vector<std::string> split = TGMTutil::SplitString(str, ',');
@@ -51,6 +52,7 @@ bool ParseColor(std::string str, cv::Scalar& low, cv::Scalar& high)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+//phát hiện vị trí đèn trắng
 cv::Mat DetectWhiteLight(cv::Mat frame, cv::Mat mask)
 {
 	cv::Mat matGray;
@@ -77,14 +79,18 @@ cv::Mat DetectWhiteLight(cv::Mat frame, cv::Mat mask)
 //khi tìm được đèn xanh/đỏ thì cần kiểm tra thêm 1 lần nữa xem có màu trắng ở giữa không 
 cv::Mat CheckWhiteLightInside(cv::Mat frame, cv::Mat mask)
 {
+	//tìm tất cả các contour
 	std::vector<TGMTcontour::Contour> contours = TGMTcontour::FindContours(mask, 30, cv::Size(g_minLightSize, g_minLightSize),
 		cv::Size(g_maxLightSize, g_maxLightSize));
 		
-	
+	//chuyển sang ảnh xám
 	cv::Mat matGray = TGMTimage::ConvertToGray(frame);
+
+	//cân bằng sáng
 	cv::equalizeHist(matGray, matGray);
 	cv::Mat matWhiteOnly;
 
+	//phân ngưỡng để lấy vị trí đèn màu trắng (là vùng sáng nhất)
 	cv::threshold(matGray, matWhiteOnly, 250, 255, CV_THRESH_BINARY);
 	
 	cv::Mat maskJoin = cv::Mat::zeros(frame.size(), CV_8U);
@@ -93,6 +99,8 @@ cv::Mat CheckWhiteLightInside(cv::Mat frame, cv::Mat mask)
 		TGMTcontour::Contour con = contours[i];
 		cv::Rect rect = cv::boundingRect(con);
 		cv::Mat matRoi = matWhiteOnly(rect);
+
+		//đếm số pixel màu trắng
 		if (cv::countNonZero(matRoi) > 20)
 		{
 			mask(rect).copyTo(maskJoin(rect));
@@ -109,15 +117,20 @@ cv::Mat CheckWhiteLightInside(cv::Mat frame, cv::Mat mask)
 cv::Mat DetectMaskRed(cv::Mat frame)
 {
 	cv::Mat matHsv;
+
+	//chuyển sang màu hsv
 	cv::cvtColor(frame, matHsv, CV_BGR2HSV);
 
 	cv::Mat maskRedLeft, maskRedRight, maskRed;
 	
+	//giới hạn màu
 	cv::inRange(matHsv, lowRed1, highRed1, maskRedLeft);
 	cv::inRange(matHsv, lowRed2, highRed2, maskRedRight);
 
+	//tổng hợp mask
 	cv::bitwise_or(maskRedLeft, maskRedRight, maskRed);
 
+	//kiểm tra xem vùng nào có đèn màu trắng bên trong thì đó chính xác là đèn đỏ
 	maskRed = CheckWhiteLightInside(frame, maskRed);
 
 
@@ -136,15 +149,20 @@ cv::Mat DetectMaskRed(cv::Mat frame)
 cv::Mat DetectMaskBlue(cv::Mat frame)
 {
 	cv::Mat matHsv;
+	//chuyển sang màu hsv
 	cv::cvtColor(frame, matHsv, CV_BGR2HSV);
 
 	cv::Mat maskBlueOutside, maskBlueInside, mask;
 
+	//giới hạn màu
 	cv::inRange(matHsv, lowBlue1, highBlue1, maskBlueOutside);
 	cv::inRange(matHsv, lowBlue2, highBlue2, maskBlueInside);
 	mask = maskBlueInside;
 	
+	//tổng hợp mask
 	cv::bitwise_or(maskBlueOutside, maskBlueInside, mask);
+
+	//kiểm tra xem vùng nào có đèn màu trắng bên trong thì đó chính xác là đèn xanh
 	mask = CheckWhiteLightInside(frame, mask);
 	if (g_debug)
 	{
@@ -177,6 +195,7 @@ bool IsRedLightOn(cv::Mat matMask)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+//mở rộng mask dựa trên thông số khoảng cách giữa 2 đèn xanh & đỏ
 cv::Mat ExpandMask(cv::Mat mask)
 {
 	if (g_lighDistance < 1)
@@ -186,7 +205,7 @@ cv::Mat ExpandMask(cv::Mat mask)
 		cv::Size(2 * g_lighDistance + 1, 2 * g_lighDistance + 1),
 		cv::Point(g_lighDistance, g_lighDistance));
 
-	/// Apply the dilation operation
+	//Áp dụng dilation (mở rộng)
 	cv::dilate(mask.clone(), mask, element);
 	return mask;
 }
@@ -197,7 +216,11 @@ cv::Mat ExpandMask(cv::Mat mask)
 void OnVideoFrame(cv::Mat frame)
 {
 	cv::Mat matBlur = frame.clone();
+
+	//cân bằng sáng cho ảnh
 	TGMTbrightness::EqualizeHist(matBlur);
+
+	//nếu giá trị blur đúng (lớn hơn 0 và số lẻ) thì làm mờ ảnh
 	if (g_blurSize > 0 && g_blurSize % 2 == 1)
 	{
 		cv::blur(matBlur, matBlur, cv::Size(g_blurSize, g_blurSize));
@@ -205,12 +228,15 @@ void OnVideoFrame(cv::Mat frame)
 
 	int frameIdx = GetTGMTvideo()->m_frameCount;
 
+	//phát hiện mask của đèn màu xanh và đỏ
 	cv::Mat maskBlue = DetectMaskBlue(matBlur);
 	cv::Mat maskRed = DetectMaskRed(matBlur);
 
+	//tổng hợp 2 mask xanh và đỏ
 	cv::Mat maskRedBlue;
 	cv::bitwise_or(maskRed, maskBlue, maskRedBlue);
 
+	//mở rộng mask để tìm điểm giao nhau của 2 đèn xanh/đỏ
 	maskRed = ExpandMask(maskRed);
 	maskBlue = ExpandMask(maskBlue);
 
@@ -218,6 +244,7 @@ void OnVideoFrame(cv::Mat frame)
 	cv::bitwise_and(maskRed, maskBlue, maskResult);
 	maskResult = ExpandMask(maskResult);
 
+	//hiển thị vị trí đèn xanh & đỏ
 	if (g_debug)
 	{
 		cv::imshow("mask result", maskResult);
@@ -228,7 +255,7 @@ void OnVideoFrame(cv::Mat frame)
 
 
 	bool isPoliceCar = false;
-
+	//đếm số blob trong mask 
 	auto blobs = TGMTblob::FindBlobs(maskResult, cv::Size(g_minLightSize, g_minLightSize), cv::Size(g_maxLightSize, g_maxLightSize));
 
 
@@ -239,6 +266,7 @@ void OnVideoFrame(cv::Mat frame)
 		g_lastFrameHasBlueLight = frameIdx;
 		g_lastFrameHasRedLight = frameIdx;
 
+		//vẽ hình chữ nhật bao lấy blob
 		TGMTblob::DrawBoundingRects(frame, blobs, cv::Point(0,0), YELLOW, 2);
 
 
@@ -259,14 +287,6 @@ void OnVideoFrame(cv::Mat frame)
 		}
 
 		g_lastFrameDetectd = frameIdx;
-	}
-	else
-	{
-		if (g_lastFrameDetectd > frameIdx - 5)
-		{
-
-		}	
-
 	}
 	
 	//vẽ thứ tự khung hình
@@ -289,6 +309,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		return 0;
 	}
 	
+	//đọc video file
 	std::string videoFile = GetTGMTConfig()->ReadValueString(INI_APP_CONFIG, "video");
 
 	int w = GetTGMTConfig()->ReadValueInt(INI_APP_CONFIG, "input_width");
@@ -301,6 +322,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	g_blurSize = GetTGMTConfig()->ReadValueInt(INI_APP_CONFIG, "blur_size", 11);
 
+	//nếu giá trị debug bằng true thì chương trình sẽ hiện các bước thực hiện
 	g_debug = GetTGMTConfig()->ReadValueBool(INI_APP_CONFIG, "debug");
 	g_lighDistance = GetTGMTConfig()->ReadValueInt(INI_APP_CONFIG, "light_distance");
 
@@ -321,11 +343,11 @@ int _tmain(int argc, _TCHAR* argv[])
 		return 0;
 	}
 
-
+	//đếm tổng số frame của video để xuất ra màn hình
 	GetTGMTvideo()->OnNewFrame = OnVideoFrame;
 	g_totalFrame = GetTGMTvideo()->GetAmountFrame(videoFile);
 
-
+	//play video
 	GetTGMTvideo()->PlayVideo(videoFile, cv::Size(w, h), 0, startIdx);
 
 
