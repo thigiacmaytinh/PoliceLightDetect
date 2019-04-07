@@ -132,12 +132,6 @@
     <ProjectReference Include="..\lib\opencv320\modules\core\opencv_core.vcxproj">
       <Project>{10b8265c-d814-3269-9aef-6c50f1815909}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\lib\opencv320\modules\features2d\opencv_features2d.vcxproj">
-      <Project>{a8696fcd-70aa-31e3-bd18-ac85d2bed14e}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\lib\opencv320\modules\flann\opencv_flann.vcxproj">
-      <Project>{1618a8f9-ffd8-34bd-b1cd-1c8c4e13a9b6}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\lib\opencv320\modules\highgui\opencv_highgui.vcxproj">
       <Project>{8e809e09-d93a-34a4-89dd-2a962dd66f4b}</Project>
     </ProjectReference>
